@@ -187,7 +187,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { title, description } = req.body;
-
+  
   let thumbNailLocalPath;
   if (req.file && req.file.path) {
     thumbNailLocalPath = req.file.path;
