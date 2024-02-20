@@ -23,10 +23,12 @@ app.use(cookieParser());
 import { userRoutes } from "./routes/user.routes.js";
 import { videoRoutes } from "./routes/video.routes.js";
 import { tweetRouter } from "./routes/tweet.routes.js";
+import { SubscriptionRouter } from "./routes/subscription.routes.js";
 
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/video", videoRoutes);
 app.use("/api/v1/tweet", tweetRouter);
+app.use("/api/v1/subscriptions", SubscriptionRouter);
 
 app.get("/api/v1", (req, res) => {
   res.status(200).json({
