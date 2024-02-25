@@ -26,6 +26,7 @@ import { tweetRouter } from "./routes/tweet.routes.js";
 import { SubscriptionRouter } from "./routes/subscription.routes.js";
 import { PlaylistRouter } from "./routes/playlist.routes.js";
 import { likeRouter } from "./routes/like.routes.js";
+import {commentRouter} from "./routes/comment.routes.js";
 
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/video", videoRoutes);
@@ -33,6 +34,7 @@ app.use("/api/v1/tweet", tweetRouter);
 app.use("/api/v1/subscriptions", SubscriptionRouter);
 app.use("/api/v1/playlist", PlaylistRouter);
 app.use("/api/v1/likes", likeRouter);
+app.use("/api/v1/comment", commentRouter);
 
 app.get("/api/v1", (req, res) => {
   res.status(200).json({
