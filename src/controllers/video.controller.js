@@ -127,6 +127,7 @@ const publishVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
+  const user = req.user; // Access the user information
 
   if (!videoId) {
     throw new ApiError(400, "videoId is required");
@@ -134,9 +135,19 @@ const getVideoById = asyncHandler(async (req, res) => {
 
   const video = await Video.findById({ _id: videoId });
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, video, "video fetched successfully"));
+  if (!user.watchhistory.includes(videoId)) {
+    user.watchhistory += [videoId];
+    video.views += 1;
+  }
+
+  try {
+    await video.save();
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json(new ApiResponse(200, video, "video fetched"));
+  } catch (error) {
+    throw new ApiError(400, "something went wrong", error);
+  }
 });
 
 const deleteVideo = asyncHandler(async (req, res) => {
@@ -187,14 +198,21 @@ const deleteVideo = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { title, description } = req.body;
-  
+
   let thumbNailLocalPath;
   if (req.file && req.file.path) {
     thumbNailLocalPath = req.file.path;
   }
 
-  if([title, description, thumbNailLocalPath].some((field) =>field.trim() === "")) {
-    throw new ApiError(400, "atleast provide one of title, description or thumbnail");
+  if (
+    [title, description, thumbNailLocalPath].some(
+      (field) => field.trim() === ""
+    )
+  ) {
+    throw new ApiError(
+      400,
+      "atleast provide one of title, description or thumbnail"
+    );
   }
 
   if (!videoId) {

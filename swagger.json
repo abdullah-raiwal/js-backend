@@ -1,0 +1,8 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "youtube backend",
+    "description": "youtube like api backend"
+  },
+  "servers": [{ "url": "http://localhost:8000" }]
+}
