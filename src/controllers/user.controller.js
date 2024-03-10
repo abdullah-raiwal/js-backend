@@ -16,7 +16,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
 
-  const accessToken = user.generateAccessToken();
+    const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
@@ -28,6 +28,80 @@ const generateAccessAndRefreshTokens = async (userId) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/v1/users/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags:
+ *       - users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               fullname:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - email
+ *               - fullname
+ *               - password
+ *     responses:
+ *       '201':
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     fullname:
+ *                       type: string
+ *                     avatar:
+ *                       type: string
+ *                     coverimage:
+ *                       type: string
+ *                 message:
+ *                   type: string
+ *                   example: User created successfully
+ *       '400':
+ *         description: Bad request, invalid input data
+ *       '409':
+ *         description: Conflict, user already exists
+ *       '500':
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 500
+ *                 message:
+ *                   type: string
+ *                   example: Something went wrong while registering the user
+ */
 const RegisterUser = asyncHandler(async (req, res) => {
   // get data from user (front end)
   const { username, email, fullname, password } = req.body;
@@ -96,6 +170,71 @@ const RegisterUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "user created successfully"));
 });
 
+/**
+ * @swagger
+ * /api/v1/users/login:
+ *   post:
+ *     summary: Login user
+ *     tags:
+ *       - users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: User logged in successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         _id:
+ *                           type: string
+ *                         username:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         fullname:
+ *                           type: string
+ *                         avatar:
+ *                           type: string
+ *                         coverimage:
+ *                           type: string
+ *                     accessToken:
+ *                       type: string
+ *                     refreshToken:
+ *                       type: string
+ *                 message:
+ *                   type: string
+ *                   example: User logged in successfully
+ *       '400':
+ *         description: Bad request, provide either email or username or password is missing
+ *       '401':
+ *         description: Unauthorized, password is incorrect
+ *       '404':
+ *         description: Not found, user not found
+ */
 const loginUser = asyncHandler(async (req, res) => {
   // get user data -> req.body
   const { email, username, password } = req.body;
@@ -157,6 +296,33 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
+/**
+ * @swagger
+ * /api/v1/users/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags:
+ *       - users
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: User logged out successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties: {}
+ *                 message:
+ *                   type: string
+ *                   example: User logged out successfully
+ */
 const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user.id,
@@ -182,6 +348,52 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "user logged out successfully"));
 });
 
+/**
+ * @swagger
+ * /api/v1/users/refresh-token:
+ *   post:
+ *     summary: Refresh access token
+ *     tags:
+ *       - users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *             required:
+ *               - refreshToken
+ *     responses:
+ *       '200':
+ *         description: Token refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     accessToken:
+ *                       type: string
+ *                     refreshToken:
+ *                       type: string
+ *                 message:
+ *                   type: string
+ *                   example: Token refreshed successfully
+ *       '400':
+ *         description: Bad request, unauthorized access
+ *       '401':
+ *         description: Unauthorized, refresh token is mismatch or user not found
+ *       '500':
+ *         description: Internal server error
+ */
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingRefreshToken =
     req.cookies.refreshToken || req.body.refreshToken;
@@ -232,6 +444,51 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/v1/users/update-password:
+ *   put:
+ *     summary: Update user password
+ *     tags:
+ *       - users
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               oldPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *             required:
+ *               - oldPassword
+ *               - newPassword
+ *     responses:
+ *       '200':
+ *         description: Password updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties: {}
+ *                 message:
+ *                   type: string
+ *                   example: Password updated successfully
+ *       '400':
+ *         description: Bad request, invalid old password
+ *       '500':
+ *         description: Internal server error
+ */
 const updatePassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
@@ -250,6 +507,47 @@ const updatePassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "password updated successfully"));
 });
 
+/**
+ * @swagger
+ * /api/v1/users/current:
+ *   get:
+ *     summary: Get current user
+ *     tags:
+ *       - users
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: User fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     fullname:
+ *                       type: string
+ *                     avatar:
+ *                       type: string
+ *                     coverimage:
+ *                       type: string
+ *                 message:
+ *                   type: string
+ *                   example: User fetched successfully
+ *       '401':
+ *         description: Unauthorized, user not authenticated
+ */
 const getCurrentUser = asyncHandler(async (req, res) => {
   const user = req?.user;
 
@@ -258,6 +556,65 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "user fetched successfully"));
 });
 
+/**
+ * @swagger
+ * /api/v1/users/update-account:
+ *   put:
+ *     summary: Update account details
+ *     tags:
+ *       - users
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *             anyOf:
+ *               - required:
+ *                   - username
+ *               - required:
+ *                   - email
+ *     responses:
+ *       '200':
+ *         description: Account details updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     fullname:
+ *                       type: string
+ *                     avatar:
+ *                       type: string
+ *                     coverimage:
+ *                       type: string
+ *                 message:
+ *                   type: string
+ *                   example: Account details updated successfully
+ *       '400':
+ *         description: Bad request, username or email is required
+ *       '401':
+ *         description: Unauthorized, user not authenticated
+ */
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { username, email } = req.body;
 
@@ -280,6 +637,59 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "account details updated successfully"));
 });
 
+/**
+ * @swagger
+ * /api/v1/users/update-avatar:
+ *   put:
+ *     summary: Update user avatar
+ *     tags:
+ *       - users
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       '200':
+ *         description: Avatar updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     fullname:
+ *                       type: string
+ *                     avatar:
+ *                       type: string
+ *                     coverimage:
+ *                       type: string
+ *                 message:
+ *                   type: string
+ *                   example: Avatar updated successfully
+ *       '400':
+ *         description: Bad request, avatar is missing or not uploaded
+ *       '401':
+ *         description: Unauthorized, user not authenticated
+ */
 const updateAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file.path;
   if (!avatarLocalPath) {
@@ -310,6 +720,59 @@ const updateAvatar = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "avatar updated successfully"));
 });
 
+/**
+ * @swagger
+ * /api/v1/users/update-cover-photo:
+ *   put:
+ *     summary: Update user cover photo
+ *     tags:
+ *       - users
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               coverImage:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       '200':
+ *         description: Cover photo updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     fullname:
+ *                       type: string
+ *                     avatar:
+ *                       type: string
+ *                     coverimage:
+ *                       type: string
+ *                 message:
+ *                   type: string
+ *                   example: Cover photo updated successfully
+ *       '400':
+ *         description: Bad request, cover image is missing or not uploaded
+ *       '401':
+ *         description: Unauthorized, user not authenticated
+ */
 const updateCoverPhoto = asyncHandler(async (req, res) => {
   const coverImageLocalPath = req.file.path;
   if (!coverImageLocalPath) {
@@ -339,6 +802,56 @@ const updateCoverPhoto = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "cover image updated successfully"));
 });
 
+/**
+ * @swagger
+ * /api/v1/users/channel/{username}:
+ *   get:
+ *     summary: Get channel profile
+ *     tags:
+ *       - users
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Username of the channel to fetch profile
+ *     responses:
+ *       '200':
+ *         description: Channel profile fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     fullname:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     avatar:
+ *                       type: string
+ *                     coverimage:
+ *                       type: string
+ *                     subscribersCount:
+ *                       type: number
+ *                     channelSubscribedToCount:
+ *                       type: number
+ *                     isSubscribed:
+ *                       type: boolean
+ *                 message:
+ *                   type: string
+ *                   example: Channel profile fetched successfully
+ *       '400':
+ *         description: Bad request, username is required
+ *       '404':
+ *         description: Not found, channel not found
+ */
 const getChannelProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
 
@@ -408,6 +921,65 @@ const getChannelProfile = asyncHandler(async (req, res) => {
     );
 });
 
+/**
+ * @swagger
+ * /api/v1/users/watch-history:
+ *   get:
+ *     summary: Get user's watch history
+ *     tags:
+ *       - users
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Watch history fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     fullname:
+ *                       type: string
+ *                     avatar:
+ *                       type: string
+ *                     watchHistory:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           title:
+ *                             type: string
+ *                           description:
+ *                             type: string
+ *                           owner:
+ *                             type: object
+ *                             properties:
+ *                               username:
+ *                                 type: string
+ *                               fullname:
+ *                                 type: string
+ *                               avatar:
+ *                                 type: string
+ *                 message:
+ *                   type: string
+ *                   example: Watch history fetched successfully
+ *       '404':
+ *         description: Not found, user not found
+ */
 const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
@@ -458,6 +1030,46 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "watch history fetched successfully"));
 });
 
+/**
+ * @swagger
+ * /api/v1/users/password-reset-mail:
+ *   post:
+ *     summary: Send password reset email
+ *     tags:
+ *       - users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *             required:
+ *               - email
+ *     responses:
+ *       '200':
+ *         description: Password reset email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: string
+ *                   example: "Password reset mail has been sent"
+ *                 message:
+ *                   type: string
+ *                   example: "Password reset mail has been sent to <user_email>"
+ *       '400':
+ *         description: Bad request, email required
+ *       '404':
+ *         description: Not found, user not found
+ */
 const passwordResetMail = asyncHandler(async (req, res) => {
   const { email } = req.body;
   console.log(req.body);
@@ -497,6 +1109,57 @@ const passwordResetMail = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/v1/users/reset-password/{userId}/{token}:
+ *   put:
+ *     summary: Reset user password
+ *     tags:
+ *       - users
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: User ID for password reset
+ *       - in: path
+ *         name: token
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Token for password reset
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               password:
+ *                 type: string
+ *             required:
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: Password updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data: {}
+ *                 message:
+ *                   type: string
+ *                   example: Password updated successfully
+ *       '400':
+ *         description: Bad request, API error occurred
+ *       '404':
+ *         description: Not found, user or token not found
+ */
 const resetPassword = asyncHandler(async (req, res) => {
   const { userId, token } = req.params;
   const { password } = req.body;

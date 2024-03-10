@@ -2,7 +2,11 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
+import swaggerJsdoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
+import {options} from './utils/swagger.js'
 
+const specs = swaggerJsdoc(options);
 const app = express();
 
 // configure cors policies. this is to make sure our backend only communicates with specfic frontend
@@ -12,6 +16,7 @@ app.use(
     credentials: true,
   })
 );
+
 // configure json limit. as we can get data as json from front-end we need to config this
 app.use(express.json({ limit: "16kb" }));
 // configure urls. as we will get data from urls too.
@@ -30,6 +35,9 @@ import { likeRouter } from "./routes/like.routes.js";
 import { commentRouter } from "./routes/comment.routes.js";
 import { dashboardRouter } from "./routes/dashboard.routes.js";
 
+// swagger docs
+app.use("/api/v1/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+// app routes
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/video", videoRoutes);
 app.use("/api/v1/tweet", tweetRouter);
