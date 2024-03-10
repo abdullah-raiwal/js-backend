@@ -16,6 +16,66 @@ const extractPublicId = (fileUrl) => {
   return publicId;
 };
 
+/**
+ * @swagger
+ * /api/v1/video/:
+ *   get:
+ *     summary: Get all videos
+ *     tags:
+ *       - video
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Number of videos per page
+ *       - in: query
+ *         name: query
+ *         schema:
+ *           type: string
+ *         description: Search query for title or description
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *         description: Field to sort by (e.g., "createdAt", "views")
+ *       - in: query
+ *         name: sortType
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *         description: Sorting order (ascending or descending)
+ *     responses:
+ *       '200':
+ *         description: Videos retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     paginatedResults:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Video'
+ *                     totalCount:
+ *                       type: number
+ *                 message:
+ *                   type: string
+ *                   example: Videos retrieved successfully
+ */
 const getAllVideos = asyncHandler(async (req, res) => {
   // this functions get all videos that logged in searched for.
 
@@ -64,6 +124,70 @@ const getAllVideos = asyncHandler(async (req, res) => {
     );
 });
 
+/**
+ * @swagger
+ * /api/v1/video/:
+ *   post:
+ *     summary: Publish a video
+ *     tags:
+ *       - video
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               videofile:
+ *                 type: string
+ *                 format: binary
+ *               thumbnail:
+ *                 type: string
+ *                 format: binary
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *             required:
+ *               - videofile
+ *               - title
+ *               - description
+ *     responses:
+ *       '200':
+ *         description: Video uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     videofile:
+ *                       type: string
+ *                     thumbnail:
+ *                       type: string
+ *                     owner:
+ *                       type: string
+ *                     title:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     duration:
+ *                       type: number
+ *                     ispublished:
+ *                       type: boolean
+ *                 message:
+ *                   type: string
+ *                   example: Video uploaded successfully
+ *       '400':
+ *         description: Bad request, title, description, or video missing
+ */
 const publishVideo = asyncHandler(async (req, res) => {
   // getting user, video path and other req params
   const user = req.user;
@@ -125,6 +249,60 @@ const publishVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "video uploaded - TEST RUN"));
 });
 
+/**
+ * @swagger
+ * /api/v1/video/{videoId}:
+ *   get:
+ *     summary: Get video by ID
+ *     tags:
+ *       - video
+ *     parameters:
+ *       - in: path
+ *         name: videoId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Video ID
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Video fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     videofile:
+ *                       type: string
+ *                     thumbnail:
+ *                       type: string
+ *                     owner:
+ *                       type: string
+ *                     title:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     duration:
+ *                       type: number
+ *                     views:
+ *                       type: number
+ *                 message:
+ *                   type: string
+ *                   example: Video fetched
+ *       '400':
+ *         description: Bad request, videoId is required
+ *       '404':
+ *         description: Not found, video not found
+ */
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const user = req.user; // Access the user information
@@ -150,6 +328,44 @@ const getVideoById = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/v1/video/{videoId}:
+ *   delete:
+ *     summary: Delete a video by ID
+ *     tags:
+ *       - video
+ *     parameters:
+ *       - in: path
+ *         name: videoId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Video ID
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Video deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: string
+ *                   example: Video deleted successfully
+ *                 message:
+ *                   type: string
+ *                   example: Video deleted successfully
+ *       '400':
+ *         description: Bad request, videoId is required
+ *       '404':
+ *         description: Not found, video not found
+ */
 const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
@@ -195,6 +411,76 @@ const deleteVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "video deleted successfully"));
 });
 
+/**
+ * @swagger
+ * /api/v1/video/{videoId}:
+ *   put:
+ *     summary: Update video by ID
+ *     tags:
+ *       - video
+ *     parameters:
+ *       - in: path
+ *         name: videoId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Video ID
+ *       - in: formData
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: New title for the video
+ *       - in: formData
+ *         name: description
+ *         schema:
+ *           type: string
+ *         description: New description for the video
+ *       - in: formData
+ *         name: thumbnail
+ *         type: file
+ *         description: New thumbnail for the video
+ *     security:
+ *       - BearerAuth: []
+ *     consumes:
+ *       - multipart/form-data
+ *     responses:
+ *       '200':
+ *         description: Video updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     videofile:
+ *                       type: string
+ *                     thumbnail:
+ *                       type: string
+ *                     owner:
+ *                       type: string
+ *                     title:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     duration:
+ *                       type: number
+ *                     views:
+ *                       type: number
+ *                 message:
+ *                   type: string
+ *                   example: Video updated successfully
+ *       '400':
+ *         description: Bad request, videoId is required or missing required fields
+ *       '404':
+ *         description: Not found, video not found
+ */
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { title, description } = req.body;

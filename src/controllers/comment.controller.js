@@ -4,6 +4,61 @@ import { ApiError } from "../utils/ApiError.js";
 import mongoose, { isValidObjectId } from "mongoose";
 import { Comment } from "../models/comment.model.js";
 
+/**
+ * @swagger
+ * /api/v1/comment/{videoId}:
+ *   get:
+ *     summary: Get comments for a specific video
+ *     tags:
+ *       - comment
+ *     parameters:
+ *       - in: path
+ *         name: videoId
+ *         required: true
+ *         description: The ID of the video
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         description: The page number (default is 1)
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         description: The maximum number of comments per page (default is 10)
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       '200':
+ *         description: Comments fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Comments fetched successfully
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Comment'
+ *       '400':
+ *         description: Bad request or something went wrong
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       '404':
+ *         description: No comments found for the video
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ */
 const getVideoComments = asyncHandler(async (req, res) => {
   const videoId = req.params.videoId;
   const { page = 1, limit = 10 } = req.query;
@@ -44,6 +99,44 @@ const getVideoComments = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/v1/comment/{videoId}:
+ *   post:
+ *     summary: Add a new comment to a video
+ *     tags:
+ *       - comment
+ *     parameters:
+ *       - in: path
+ *         name: videoId
+ *         required: true
+ *         description: The ID of the video
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 description: The content of the comment
+ *     responses:
+ *       '200':
+ *         description: Comment created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       '400':
+ *         description: Bad request or something went wrong
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ */
 const addComment = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { content } = req.body;
@@ -74,6 +167,37 @@ const addComment = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/v1/comment/c:
+ *   delete:
+ *     summary: Delete a comment
+ *     tags:
+ *       - comment
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               commentId:
+ *                 type: string
+ *                 description: The ID of the comment to be deleted
+ *     responses:
+ *       '200':
+ *         description: Comment deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       '400':
+ *         description: Bad request, comment not found, or unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ */
 const deleteComment = asyncHandler(async (req, res) => {
   const { commentId } = req.body;
 
@@ -100,6 +224,40 @@ const deleteComment = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/v1/comment/c:
+ *   put:
+ *     summary: Update a comment
+ *     tags:
+ *       - comment
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               commentId:
+ *                 type: string
+ *                 description: The ID of the comment to be updated
+ *               content:
+ *                 type: string
+ *                 description: The updated content of the comment
+ *     responses:
+ *       '200':
+ *         description: Comment updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       '400':
+ *         description: Bad request, comment not found, unauthorized, or invalid content
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ */
 const updateComment = asyncHandler(async (req, res) => {
   const { commentId } = req.body;
   const { content } = req.body;
