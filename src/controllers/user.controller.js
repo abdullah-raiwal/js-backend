@@ -1,6 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
+import { tokenReset } from "../models/resetTokenSchema.model.js";
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
@@ -8,12 +9,14 @@ import {
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { randomBytes } from "crypto";
+import { sendMail } from "../utils/emailConfig.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
 
-    const accessToken = user.generateAccessToken();
+  const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
@@ -284,6 +287,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
   }
 
   const avatar = await uploadToCloudinary(avatarLocalPath);
+  console.log(avatar);
 
   if (!avatar.url) {
     throw new ApiError(400, "API error. file not uploaded");
@@ -454,6 +458,79 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "watch history fetched successfully"));
 });
 
+const passwordResetMail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  console.log(req.body);
+
+  if (!email) {
+    throw new ApiError(404, "email required");
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json(new ApiResponse(404, {}, "user not found"));
+    }
+
+    const token = randomBytes(32).toString("hex");
+    console.log("token", token);
+
+    const resetLink = `${process.env.BASE_URL}/password-reset/${user._id}/${token}`;
+    console.log("resetLink", resetLink);
+
+    await tokenReset.create({ userId: user._id, token });
+
+    console.log(process.env);
+    await sendMail(user.email, "password reset link", resetLink);
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          `password reset mail has been send to ${user.email}`
+        )
+      );
+  } catch (error) {
+    console.log(error);
+    throw new ApiError(400, "Api error", error);
+  }
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { userId, token } = req.params;
+  const { password } = req.body;
+
+  if (!userId && !token) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, {}, "userId or token is required"));
+  }
+  try {
+    const user = await User.findOne({ _id: userId });
+    if (!user) {
+      return res.status(404).json(new ApiResponse(404, {}, "user not found"));
+    }
+
+    const resetToken = await tokenReset.findOne({ userId: userId, token });
+    if (!resetToken) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, "token not found or invalid token"));
+    }
+
+    user.password = password;
+    await user.save({ validateBeforeSave: false });
+    await tokenReset.deleteOne({ userId: userId, token });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "password updated successfully"));
+  } catch (error) {
+    throw new ApiError(400, "Api error", error);
+  }
+});
+
 export {
   RegisterUser,
   loginUser,
@@ -466,4 +543,6 @@ export {
   updateCoverPhoto,
   getChannelProfile,
   getWatchHistory,
+  passwordResetMail,
+  resetPassword,
 };
